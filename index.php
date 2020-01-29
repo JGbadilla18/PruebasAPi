@@ -1,38 +1,42 @@
-<?php 
+"use strict";
 
-$method = $_SERVER['REQUEST_METHOD'];
+const express = require("express");
+const bodyParser = require("body-parser");
 
-// Process only when method is POST
-if($method == 'POST'){
-	$requestBody = file_get_contents('php://input');
-	$json = json_decode($requestBody);
+const restService = express();
 
-	$text = $json->result->parameters->text;
+restService.use(
+  bodyParser.urlencoded({
+    extended: true
+  })
+);
 
-	switch ($text) {
-		case 'hola':
-			$speech = "hola, soy codigo como puedo ayudarte";
-			break;
+restService.use(bodyParser.json());
 
-		case 'adios':
-			$speech = "un placer ayudarte, usuario";
-			break;
+restService.post("/echo", function(req, res) {
+  var speech =
+    req.body.queryResult &&
+    req.body.queryResult.parameters &&
+    req.body.queryResult.parameters.echoText
+      ? req.body.queryResult.parameters.echoText
+      : "Seems like some problem. Speak again."+req.body;
+  return res.json({
 
-				
-		default:
-			$speech = "perdon lo puedes repetir";
-			break;
-	}
+  "fulfillmentText": speech,
+  "fulfillmentMessages": [
+    {
+      "text": {
+        "text": [speech]
+      }
+    }
+  ],
+  "source": "<webhookpn1>"
 
-	$response = new \stdClass();
-	$response->speech = $speech;
-	$response->displayText = $speech;
-	$response->source = "webhook";
-	echo json_encode($response);
-}
-else
-{
-	echo "Method not allowed";
-}
 
-?>
+  });
+});
+
+
+restService.listen(process.env.PORT || 8000, function() {
+  console.log("Server up and listening");
+});
